@@ -6,6 +6,7 @@ function main() %initial values
     v0 = zeros(3,1);
     v = v0;
     pos = zeros(3,1);
+    thetaVec = zeros(3,1);
     
     refHeight = 10;
     
@@ -22,9 +23,8 @@ function main() %initial values
     Fnew = zeros(3,1);
     
     h = 0.01;
-    ta = 0:h:100;
+    ta = 0:h:2000;
     counter = 0;
-    
     
     posVec = zeros(3,numel(ta));
     velVec = zeros(3,numel(ta));
@@ -38,7 +38,8 @@ function main() %initial values
     e = pos(3)-refHeight;
     integral = 0;
     inputs= zeros(4,1);
-    thrustTot = zeros(4,1)
+    thrustTot = zeros(4,1);
+    rotMat = zeros(3);
     
     for t = ta;
         counter = counter +1;
@@ -50,24 +51,29 @@ function main() %initial values
         
         thrustTot = thrust(k,inputs);
         
-        if vn(3) ~= 0
+        rotMat = rotation( thetaVec );
+        
+        %uppdatera vinklar
+        %accelerationen 
+        
+        %if vn(3) ~= 0
            % Ftempn(3) = Ftempn(3) - 0.001*vn(3);
-        end
+        %end
         
-        if v(3) ~= 0
+        %if v(3) ~= 0
             %Ftemp(3) = Ftemp(3) - 0.001*v(3);
-        end
+        %end
         
-        a = acceleration(g, Ftemp, m);
+        a = acceleration(g, rotMat, thrustTot, m);
         v = velocity(a, t, v0);
         
-        an = Ftempn/m -[0;0;g];
-        sumA = an+ sumA;
+        %an = Ftempn/m -[0;0;g];
+        an = -[0;0;g] + (rotMat * [0;0;thrustTot]) ./ m;
+        sumA = an + sumA;
         vn = h * sumA;
         pn = pn + vn*h;
         
         pos = pos + h * v; %Euler
-       
         
         posVec(:,counter) = pos;
         velVec(:,counter) = v;
@@ -101,10 +107,10 @@ function main() %initial values
                 title('Position')
 end
 
-function acc = acceleration(g , Ftemp, m)
+function acc = acceleration(g , rotMat, thrustTot, m)
     gravity = [0; 0; -g];
-    acc = gravity + Ftemp / m;
-    %acc = rotMat * totThrust / m; 3x1-vector 
+    %acc = gravity + Ftemp / m;
+    acc = gravity + (rotMat * [0;0;thrustTot]) ./ m; %3x1-vector 
 end
 
 function vel = velocity(a,t, v0)
@@ -116,15 +122,34 @@ function thrustTot = thrust(k, inputs)
 end
 
 function [input,integral] = pidHeight(e, eprev,h,integral)
-    kp = 0.1;
-    ki = 0.1;
-    kd = 0.1;
+    kp = 0.1;%3;
+    ki = 0.1;%5.5;
+    kd = 0.1;%4;
     integral = integral + e*h;
     derivative = ((e-eprev)/h);
     input = kp*e + ki*integral + kd*derivative;
 end
 
 function rotMat = rotation( thetaVec )
-    
+    roll    = thetaVec(1);
+    pitch   = thetaVec(2);
+    yaw     = thetaVec(3);
+
+    rotMat = zeros(3);
+    rotMat(:, 1) = [
+        cos(yaw) * cos(pitch)
+        cos(pitch) * sin(yaw)
+        - sin(pitch)
+    ];
+    rotMat(:, 2) = [
+        cos(yaw) * sin(pitch) * sin(roll) - cos(roll) * sin(yaw)
+        cos(yaw) * cos(roll) + sin(yaw) * sin(pitch) * sin(roll)
+        cos(pitch) * sin(roll)
+    ];
+    rotMat(:, 3) = [
+        sin(yaw) * sin(roll) + cos(yaw) * cos(roll) * sin(pitch)
+        cos(roll) * sin(yaw) * sin(pitch) - cos(yaw) * sin(roll)
+        cos(pitch) * cos(roll)
+    ];
 end
 
