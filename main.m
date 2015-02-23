@@ -7,6 +7,8 @@ function main() %initial values
     v = v0;
     pos = zeros(3,1);
     
+    refHeight = 10;
+    
     an = a; 
     vn = v;
     pn = pos;
@@ -33,15 +35,27 @@ function main() %initial values
     anVec = accVec;
     sumA = zeros(3,1);
     
+    e = pos(3)-refHeight;
+    integral = 0;
+    inputs= zeros(4,1);
+    thrustTot = zeros(4,1)
+    
     for t = ta;
         counter = counter +1;
+       
+        eprev = e;
+        e = pos(3) - refHeight;
+        
+        [inputs, integral] = pidHeight( e, eprev, h, integral);
+        
+        thrustTot = thrust(k,inputs);
         
         if vn(3) ~= 0
-            Ftempn(3) = Ftempn(3) - 0.001*vn(3);
+           % Ftempn(3) = Ftempn(3) - 0.001*vn(3);
         end
         
         if v(3) ~= 0
-            Ftemp(3) = Ftemp(3) - 0.001*v(3);
+            %Ftemp(3) = Ftemp(3) - 0.001*v(3);
         end
         
         a = acceleration(g, Ftemp, m);
@@ -53,6 +67,7 @@ function main() %initial values
         pn = pn + vn*h;
         
         pos = pos + h * v; %Euler
+       
         
         posVec(:,counter) = pos;
         velVec(:,counter) = v;
@@ -89,10 +104,27 @@ end
 function acc = acceleration(g , Ftemp, m)
     gravity = [0; 0; -g];
     acc = gravity + Ftemp / m;
-    acc = 
+    %acc = rotMat * totThrust / m; 3x1-vector 
 end
 
 function vel = velocity(a,t, v0)
     vel = a*t + v0; 
+end
+
+function thrustTot = thrust(k, inputs)
+    thrustTot = k*sum(inputs.^2); %d?r input ?r en 4x1-vector inneh?llandes de fyra rotorernas vinkelhastighet.
+end
+
+function [input,integral] = pidHeight(e, eprev,h,integral)
+    kp = 0.1;
+    ki = 0.1;
+    kd = 0.1;
+    integral = integral + e*h;
+    derivative = ((e-eprev)/h);
+    input = kp*e + ki*integral + kd*derivative;
+end
+
+function rotMat = rotation( thetaVec )
+    
 end
 
