@@ -1,4 +1,5 @@
 function main()
+close all
   % Constants
     g = 9.82;    % gravity
     m = 1.0;     % mass of copter
@@ -226,8 +227,8 @@ function subplotFunc(x,y1,y2,y3,str)
                 subplot(3,1,2)
                 plot(x,y2(1,:), 'r')    %plot z vel
                 hold on
-                plot(x, y3(2,:),'g')
-                plot(x, y3(3,:), 'b')
+                plot(x, y2(2,:),'g')
+                plot(x, y2(3,:), 'b')
                 title('Velocity')
                     subplot(3,1,3)
                     plot(x, y3(1,:), 'r')%plot z pos
