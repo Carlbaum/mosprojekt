@@ -1,14 +1,15 @@
-function main() %initial values
+function main()
   % Constants
     g = 9.82;    % gravity
     m = 1.0;     % mass of copter
     L = 0.25;    % distance to center
     k = 3e-4;    % propeller constant
     b = 0;       % drag coefficent
+
     
   % PID-coefficients
-    kp = 5.0;%3;
-    ki = 2;%5.5;
+    kp = 5.0;
+    ki = 2.0;
     kd = 0.06;%4;
 
   % Initial values
@@ -21,9 +22,9 @@ function main() %initial values
     thetaVec = zeros(3,1);
     
     refHeight = 10;
-    errHeight = pos(3)-refHeight; %
-    integral = 0;
-    %inputs= zeros(4,1);
+    errHeight = ones(4,1)*(pos(3)-refHeight); %
+    integral = zeros(4,1);
+    %inputs = zeros(4,1);
     
   % Time variables
     h = 0.01; % step length / delta time
@@ -42,26 +43,26 @@ function main() %initial values
 %     angVec = zeros(3,numel(ta));
 %     angVec = zeros(3,numel(ta));
     
-  % %Variables for another aproach
-    %aN = a; 
-    %vN = v;
-    %pN = pos;
-    
-    %pNVec = posVec;
-    %vNVec = velVec;
-    %aNVec = accVec;
-    %sumAN = zeros(3,1);
-    
-    %eN = pN(3)-refHeight;
-    %integralN = 0;
-    %inputsN= zeros(4,1);
-    %thrustTotN = zeros(4,1);
+%   %Variables for another aproach
+%     aN = a; 
+%     vN = v;
+%     pN = pos;
+%     
+%     pNVec = posVec;
+%     vNVec = velVec;
+%     aNVec = accVec;
+%     sumAN = zeros(3,1);
+%     
+%     eN = pN(3)-refHeight;
+%     integralN = 0;
+%     %inputsN= zeros(4,1);
+%     %thrustTotN = zeros(4,1);
        
     for t = ta;
         counter = counter +1;
        
         errHeightPrev = errHeight;
-        errHeight = refHeight - pos(3);
+        errHeight = ones(4,1) * (refHeight - pos(3)); %DETTA M?STE ?NDRAS N?R VI INF?R VINKLAR
         
         [inputs, integral] = pidHeight( kp,ki,kd,errHeight, errHeightPrev, h, integral);
         thrustTot = thrust(k,inputs);
@@ -72,11 +73,14 @@ function main() %initial values
         
         a = acceleration(g, rotMat, thrustTot, m);
         v = velocity(a, t, v0);
+
 %         v2 = v2 + h*a;
          aa = angAcceleration(I, inputs, L, b, k);
-         
+
+        pos = pos + h * v; %Euler
+
         
-        pos = pos + h * v2; %Euler
+%         pos2 = pos2 + h * v2; %Euler
         
 %         v2vec(:,counter) = v2;
         posVec(:,counter) = pos;
@@ -86,19 +90,20 @@ function main() %initial values
 % %The other aproach
 %         eNprev = eN;
 %         eN = refHeight - pN(3);
-
+% 
 %         [inputsN, integralN] = pidHeightN( eN, eNprev, h, integralN);
 %         thrustTotN = thrust(k,inputsN);
-
+% 
 %         aN = -[0;0;g] + (rotMat * [0;0;thrustTotN]) ./ m;
 %         sumAN = aN + sumAN;
 %         vN = h * sumAN;
 %         pN = pN + vN*h;
-        
+%         
 %         pNVec(:,counter) = pN;
 %         vNVec(:,counter) = vN;
 %         aNVec(:,counter) = aN;
     end
+
     subplotFunc(ta, accVec(3,:),velVec(3,:), posVec(3,:), sprintf('\b kp = %f,  ki = %f,  kd = %f',kp,ki,kd)); 
 %     figure
 %     plot(ta,v2vec(3,:));
@@ -137,20 +142,20 @@ end
 
 function [input,integral] = pidHeight(kp,ki,kd,errHeight, errHeightPrev,h,integral)
     integral = integral + errHeight*h;
-    derivative = ((errHeight-errHeightPrev)/h);
-    input = kp*errHeight + ki*integral + kd*derivative;
-    if (input < 0)
-        input = 0;
-    end
+    derivative = ((errHeight-errHeightPrev)./h);
+    input = (kp*errHeight + ki*integral + kd*derivative)./4;
+    
+    control = input < 0; % We cant have negative input, therefore
+    input(control) = 0;  % we set all negative values to zero
 end
 
-function [inputn,integraln] = pidHeightN(en, enprev,h,integraln)
-    kp = 0.1;%3;
-    ki = 0.1;%5.5;
-    kd = 0.01;%4;
-    integraln = integraln + en*h;
-    derivative = ((en-enprev)/h);
-    inputn = kp*en + ki*integraln + kd*derivative;
+function [inputN,integralN] = pidHeightN(eN, eNprev,h,integralN)
+    kp = 5.0;%3;
+    ki = 2.0;%5.5;
+    kd = 0.06;%4;
+    integralN = integralN + eN*h;
+    derivative = ((eN-eNprev)/h);
+    inputN = kp*eN + ki*integralN + kd*derivative;
 end
 
 function rotMat = rotation( thetaVec )
@@ -188,8 +193,10 @@ function subplotFunc(x,y1,y2,y3,str)
                     subplot(3,1,3)
                     plot(x, y3)%plot z pos
                     title('Position')
-%                     ha = axes('Position',[0 0 1 1],'Xlim',[0 1],'Ylim',[0 1],'Box','off','Visible','off','Units','normalized', 'clipping' , 'off');
 
-    text(max(x)/2, 1,str,'HorizontalAlignment' ,'center','VerticalAlignment', 'top')
+                    ha = axes('Position',[0 0.9 1 1],'Xlim',[0 1],'Ylim',[0 1],'Box','off','Visible','off','Units','normalized', 'clipping' , 'off');
+
+    text(0.5, 0.1,str,'HorizontalAlignment' ,'center','VerticalAlignment', 'top')
+
 end
 
