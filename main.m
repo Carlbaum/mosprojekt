@@ -126,9 +126,9 @@ function main()
         aNVec(:,counter) = aN;
     end
 
-    subplotFunc(ta, accVec(3,:),velVec(3,:), posVec(3,:), sprintf('\b kp = %f,  ki = %f,  kd = %f',kp,ki,kd)); 
-    subplotFunc(ta, acc2Vec(3,:),v2vec(3,:), pos2Vec(3,:), sprintf('\b kp = %f,  ki = %f,  kd = %f',kp,ki,kd)); 
-    subplotFunc(ta, aNVec(3,:), vNVec(3,:), pNVec(3,:), sprintf('\b kp = %f,  ki = %f,  kd = %f',kp,ki,kd)); 
+    subplotFunc(ta, accVec,velVec, posVec, sprintf('\b kp = %f,  ki = %f,  kd = %f',kp,ki,kd)); 
+    subplotFunc(ta, acc2Vec,v2vec, pos2Vec, sprintf('\b kp = %f,  ki = %f,  kd = %f',kp,ki,kd)); 
+    subplotFunc(ta, aNVec, vNVec, pNVec, sprintf('\b kp = %f,  ki = %f,  kd = %f',kp,ki,kd)); 
 
     %     figure
 %     plot(ta,v2vec(3,:));
