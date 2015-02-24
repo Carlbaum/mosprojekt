@@ -1,10 +1,16 @@
 function main() %initial values
+  % Constants
     g = 9.82;
+    m = 1;   
+    L = 0.25;
+    k = 3e-6;
     
+  % PID-coefficients
     kp = 1.0;%3;
     ki = 12.0;%5.5;
-    kd = 0.6;%4;
+    kd = 0.0;%4;
 
+  % Initial values
     a = [ 0 ; 0 ; -g ];
     v0 = zeros(3,1);
     v = v0;
@@ -12,132 +18,80 @@ function main() %initial values
     thetaVec = zeros(3,1);
     
     refHeight = 10;
+    errHeight = pos(3)-refHeight; %
+    integral = 0;
+    %inputs= zeros(4,1);
     
-   %an = a; 
-    %vn = v;
-    %pn = pos;
-
-    m = 1;   
-    L = 0.25;
-    k = 3e-6;
-    
-    h = 0.01;
-    ta = 0:h:100;
+  % Time variables
+    h = 0.01; % step length / delta time
+    tStart = 0;
+    tStop = 100;
+    ta = tStart:h:tStop;
     counter = 0;
-    
+   
+  % Variables to store values for plots  
     posVec = zeros(3,numel(ta));
     velVec = zeros(3,numel(ta));
     accVec = zeros(3,numel(ta));
     
-    %pnVec = posVec;
-    %vnVec = velVec;
-    %anVec = accVec;
-    %sumA = zeros(3,1);
+  % %Variables for another aproach
+    %aN = a; 
+    %vN = v;
+    %pN = pos;
     
-    e = pos(3)-refHeight;
-    integral = 0;
-    %inputs= zeros(4,1);
-    %thrustTot = zeros(4,1);
+    %pNVec = posVec;
+    %vNVec = velVec;
+    %aNVec = accVec;
+    %sumAN = zeros(3,1);
     
-    %en = pn(3)-refHeight;
-    %integraln = 0;
-    %inputsn= zeros(4,1);
-    %thrustTotn = zeros(4,1);
-    
-    %rotMat = zeros(3);
-    
+    %eN = pN(3)-refHeight;
+    %integralN = 0;
+    %inputsN= zeros(4,1);
+    %thrustTotN = zeros(4,1);
+       
     for t = ta;
         counter = counter +1;
        
-        eprev = e;
-        e = refHeight - pos(3);
+        errHeightPrev = errHeight;
+        errHeight = refHeight - pos(3);
         
-%         enprev = en;
-%         en = refHeight - pn(3);
-        
-        [inputs, integral] = pidHeight( kp,ki,kd,e, eprev, h, integral);
+        [inputs, integral] = pidHeight( kp,ki,kd,errHeight, errHeightPrev, h, integral);
         thrustTot = thrust(k,inputs);
-        
-%         [inputsn, integraln] = pidHeightn( en, enprev, h, integraln);
-%         thrustTotn = thrust(k,inputsn);
-%         
+     
         rotMat = rotation( thetaVec );
         
-        %uppdatera vinklar
-        %accelerationen 
+        %TODO uppdatera vinklar
+        
         a = acceleration(g, rotMat, thrustTot, m);
         v = velocity(a, t, v0);
-        
-        %an = Ftempn/m -[0;0;g];
-%         an = -[0;0;g] + (rotMat * [0;0;thrustTotn]) ./ m;
-%         sumA = an + sumA;
-%         vn = h * sumA;
-%         pn = pn + vn*h;
-        
+
         pos = pos + h * v; %Euler
         
         posVec(:,counter) = pos;
         velVec(:,counter) = v;
         accVec(:,counter) = a;
         
-%         pnVec(:,counter) = pn;
-%         vnVec(:,counter) = vn;
-%         anVec(:,counter) = an;
-    end
-%     figure
-%         subplot(1,3,1)
-%         plot(ta, accVec(1,:))       %plot z acc
-%         title('Acceleration')
-%             subplot(1,3,2)
-%             plot(ta,velVec(1,:))    %plot z vel
-%             title('Velocity')
-%                 subplot(1,3,3)
-%                 plot(ta, posVec(1,:))%plot z pos
-%                 title('Position')
-%                 
-%     figure
-%         subplot(1,3,1)
-%         plot(ta, accVec(2,:))       %plot z acc
-%         title('Acceleration')
-%             subplot(1,3,2)
-%             plot(ta,velVec(2,:))    %plot z vel
-%             title('Velocity')
-%                 subplot(1,3,3)
-%                 plot(ta, posVec(2,:))%plot z pos
-%                 title('Position')
-    figure
-        subplot(3,1,1)
-        plot(ta, accVec(3,:))       %plot z acc
-        title('Acceleration')
-            subplot(3,1,2)
-            plot(ta,velVec(3,:))    %plot z vel
-            title('Velocity')
-                subplot(3,1,3)
-                plot(ta, posVec(3,:))%plot z pos
-                title('Position')
-                str = sprintf('\b kp = %f,  ki = %f,  kd = %f',kp,ki,kd);
-                ha = axes('Position',[0 0 1 1],'Xlim',[0 1],'Ylim',[0 
-1],'Box','off','Visible','off','Units','normalized', 'clipping' , 'off');
+% %The other aproach
+%         eNprev = eN;
+%         eN = refHeight - pN(3);
 
-text(0.5, 1,str,'HorizontalAlignment' ,'center','VerticalAlignment', 'top')
-                
-%     figure
-%         subplot(3,1,1)
-%         plot(ta, anVec(3,:))         %plot z acc
-%         title('Acceleration')
-%             subplot(3,1,2)
-%             plot(ta,vnVec(3,:))      %plot z vel
-%             title('Velocity')
-%                 subplot(3,1,3)
-%                 plot(ta, pnVec(3,:)) %plot z pos
-%                 title('Position')
-                
-     
+%         [inputsN, integralN] = pidHeightN( eN, eNprev, h, integralN);
+%         thrustTotN = thrust(k,inputsN);
+
+%         aN = -[0;0;g] + (rotMat * [0;0;thrustTotN]) ./ m;
+%         sumAN = aN + sumAN;
+%         vN = h * sumAN;
+%         pN = pN + vN*h;
+        
+%         pNVec(:,counter) = pN;
+%         vNVec(:,counter) = vN;
+%         aNVec(:,counter) = aN;
+    end
+    subplotFunc(ta, accVec(3,:),velVec(3,:), posVec(3,:), sprintf('\b kp = %f,  ki = %f,  kd = %f',kp,ki,kd));    
 end
 
 function acc = acceleration(g , rotMat, thrustTot, m)
     gravity = [0; 0; -g];
-    %acc = gravity + Ftemp / m;
     acc = gravity + (rotMat * [0;0;thrustTot]) ./ m; %3x1-vector 
 end
 
@@ -149,13 +103,16 @@ function thrustTot = thrust(k, inputs)
     thrustTot = k*sum(inputs.^2); %d?r input ?r en 4x1-vector inneh?llandes de fyra rotorernas vinkelhastighet.
 end
 
-function [input,integral] = pidHeight(kp,ki,kd,e, eprev,h,integral)
-    integral = integral + e*h;
-    derivative = ((e-eprev)/h);
-    input = kp*e + ki*integral + kd*derivative;
+function [input,integral] = pidHeight(kp,ki,kd,errHeight, errHeightPrev,h,integral)
+    integral = integral + errHeight*h;
+    derivative = ((errHeight-errHeightPrev)/h);
+    input = kp*errHeight + ki*integral + kd*derivative;
+    if (input < 0)
+        input = 0;
+    end
 end
 
-function [inputn,integraln] = pidHeightn(en, enprev,h,integraln)
+function [inputn,integraln] = pidHeightN(en, enprev,h,integraln)
     kp = 0.1;%3;
     ki = 0.1;%5.5;
     kd = 0.01;%4;
@@ -185,5 +142,22 @@ function rotMat = rotation( thetaVec )
         cos(roll) * sin(yaw) * sin(pitch) - cos(yaw) * sin(roll)
         cos(pitch) * cos(roll)
     ];
+end
+
+function subplotFunc(x,y1,y2,y3,str)
+    figure
+    subplot(3,1,1)
+            plot(x, y1)       %plot z acc
+            title('Acceleration')
+                subplot(3,1,2)
+                plot(x,y2)    %plot z vel
+                title('Velocity')
+                    subplot(3,1,3)
+                    plot(x, y3)%plot z pos
+                    title('Position')
+                    ha = axes('Position',[0 0 1 1],'Xlim',[0 1],'Ylim',[0 
+    1],'Box','off','Visible','off','Units','normalized', 'clipping' , 'off');
+
+    text(0.5, 1,str,'HorizontalAlignment' ,'center','VerticalAlignment', 'top')
 end
 
