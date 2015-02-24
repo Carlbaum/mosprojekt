@@ -19,6 +19,7 @@ function main()
     v = v0;
     v2 = v0;
     pos = zeros(3,1);
+    pos2 = zeros(3,1);
     thetaVec = zeros(3,1);
     
     refHeight = 10;
@@ -27,9 +28,9 @@ function main()
     %inputs = zeros(4,1);
     
   % Time variables
-    h = 0.01; % step length / delta time
+    h = 0.001; % step length / delta time
     tStart = 0;
-    tStop = 1000;
+    tStop = 100;
     ta = tStart:h:tStop;
     counter = 0;
    
@@ -73,20 +74,17 @@ function main()
         
         a = acceleration(g, rotMat, thrustTot, m);
         v = velocity(a, t, v0);
-
-%         v2 = v2 + h*a;
-         aa = angAcceleration(I, inputs, L, b, k);
-
-        pos = pos + h * v; %Euler
-
+        pos = pos + h * v; %Euler   
+        pos2 = pos2 + h * v2; %Euler
+        v2 = v2 + h*a;
+         
+        aA = angAcceleration(I, inputs, L, b, k);
+        aV = angVelocity(aA, t);
         
-%         pos2 = pos2 + h * v2; %Euler
-        
-%         v2vec(:,counter) = v2;
+        v2vec(:,counter) = v2;
         posVec(:,counter) = pos;
         velVec(:,counter) = v;
-        accVec(:,counter) = a;
-        
+        accVec(:,counter) = a; 
 % %The other aproach
 %         eNprev = eN;
 %         eN = refHeight - pN(3);
@@ -104,9 +102,11 @@ function main()
 %         aNVec(:,counter) = aN;
     end
 
-    subplotFunc(ta, accVec(3,:),velVec(3,:), posVec(3,:), sprintf('\b kp = %f,  ki = %f,  kd = %f',kp,ki,kd)); 
-%     figure
-%     plot(ta,v2vec(3,:));
+    subplotFunc(ta, accVec,velVec, posVec, sprintf('\b kp = %f,  ki = %f,  kd = %f',kp,ki,kd)); 
+     figure
+     plot(ta,v2vec(3,:));
+     hold on 
+     plot(ta,velVec(3,:), 'r');
 end
 
 function acc = acceleration(g , rotMat, thrustTot, m)
@@ -130,6 +130,10 @@ function angAcc = angAcceleration(I, inputs, L, b, k)
     tau = torques(inputs, L, b, k);                       % vec3 of torques in x,y,z
     angAcc = inv(I)*tau;
 
+end
+
+function angVel = angVelocity(aa, t)
+    angVel = aa*t;
 end
 
 function vel = velocity(a,t, v0)
@@ -185,13 +189,22 @@ end
 function subplotFunc(x,y1,y2,y3,str)
     figure
     subplot(3,1,1)
-            plot(x, y1)       %plot z acc
+            plot(x, y1(1,:), 'r')       %plot z acc
+            hold on
+            plot(x, y1(2,:), 'g')
+            plot(x, y1(3,:), 'b')
             title('Acceleration')
                 subplot(3,1,2)
-                plot(x,y2)    %plot z vel
+                plot(x,y2(1,:), 'r')    %plot z vel
+                hold on
+                plot(x, y3(2,:),'g')
+                plot(x, y3(3,:), 'b')
                 title('Velocity')
                     subplot(3,1,3)
-                    plot(x, y3)%plot z pos
+                    plot(x, y3(1,:), 'r')%plot z pos
+                    hold on
+                    plot(x, y3(2,:), 'g')
+                    plot(x, y3(3,:), 'b')
                     title('Position')
 
                     ha = axes('Position',[0 0.9 1 1],'Xlim',[0 1],'Ylim',[0 1],'Box','off','Visible','off','Units','normalized', 'clipping' , 'off');
