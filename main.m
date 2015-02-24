@@ -3,12 +3,12 @@ function main() %initial values
     g = 9.82;
     m = 1;   
     L = 0.25;
-    k = 3e-6;
+    k = 3e-3;
     
   % PID-coefficients
-    kp = 1.0;%3;
-    ki = 12.0;%5.5;
-    kd = 0.0;%4;
+    kp = 5.0;%3;
+    ki = 2;%5.5;
+    kd = 0.06;%4;
 
   % Initial values
     a = [ 0 ; 0 ; -g ];
