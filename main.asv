@@ -72,13 +72,12 @@ function main() %initial values
         
         a = acceleration(g, rotMat, thrustTot, m);
         v = velocity(a, t, v0);
-%         v2 = v2 + h*a;
-         aa = angAcceleration(I, inputs, L, b, k);
-         
+        v2 = v2 + h*a;
+        aa = angAcceleration(I, rotMat, thrustTot, m);
         
         pos = pos + h * v2; %Euler
         
-%         v2vec(:,counter) = v2;
+        v2vec(:,counter) = v2;
         posVec(:,counter) = pos;
         velVec(:,counter) = v;
         accVec(:,counter) = a;
@@ -99,9 +98,7 @@ function main() %initial values
 %         vNVec(:,counter) = vN;
 %         aNVec(:,counter) = aN;
     end
-    subplotFunc(ta, accVec(3,:),velVec(3,:), posVec(3,:), sprintf('\b kp = %f,  ki = %f,  kd = %f',kp,ki,kd)); 
-%     figure
-%     plot(ta,v2vec(3,:));
+    subplotFunc(ta, accVec(3,:),velVec(3,:), posVec(3,:), sprintf('\b kp = %f,  ki = %f,  kd = %f',kp,ki,kd));    
 end
 
 function acc = acceleration(g , rotMat, thrustTot, m)
