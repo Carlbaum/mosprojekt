@@ -1,13 +1,13 @@
 function main()
   % Constants
     g = 9.82;
-    m = 1;   
+    m = 1; 
     L = 0.25; % Length of each rotor arm.. 
     k = 3e-4; % propeller constant
     
   % PID-coefficients
-    kp = 5.0;%3;
-    ki = 2.0;%5.5;
+    kp = 5.0;
+    ki = 2.0;
     kd = 0.06;%4;
 
   % Initial values
