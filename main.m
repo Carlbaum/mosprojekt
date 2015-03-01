@@ -23,7 +23,7 @@ close all
 
     pos2 = zeros(3,1);
 
-    thetaVec = zeros(3,1);
+    theta = zeros(3,1);
     
     refHeight = 10;
     errHeight = ones(4,1)*(pos(3)-refHeight); %
@@ -77,21 +77,30 @@ close all
         [inputs, integral] = pidHeight( kp,ki,kd,errHeight, errHeightPrev, h, integral);
         thrustTot = thrust(k,inputs);
      
-        rotMat = rotation( thetaVec );
+        rotMat = rotation( theta );
         
         %TODO uppdatera vinklar
         
+        %Acceleration till position
         a = acceleration(g, rotMat, thrustTot, m);
         asum = asum + a;
         %v = h*asum;
         v = velocity(a, t, v0);
         pos = pos + h * v; %Euler
         
-        aa = angAcceleration(I, inputs, L, b, k);
-        
         posVec(:,counter) = pos;
         velVec(:,counter) = v;
         accVec(:,counter) = a;
+        
+        %Vinkelacceleration till vinklar
+        angAcc = angAcceleration(I, inputs, L, b, k);
+        
+        angVel = angVelocity(angAcc, t);
+        theta = theta + h*angVel;   %Euler
+      
+        thetaVec(:,counter) = theta;
+        angVelVec(:,counter) = angVel;
+        angAccVec(:,counter) = angAcc;
 
 % Another attempt
         errHeightPrev2 = errHeight2;
@@ -126,9 +135,11 @@ close all
     end
 
     subplotFunc(ta, accVec,velVec, posVec, sprintf('\b kp = %f,  ki = %f,  kd = %f',kp,ki,kd)); 
-    subplotFunc(ta, acc2Vec,v2vec, pos2Vec, sprintf('\b kp = %f,  ki = %f,  kd = %f',kp,ki,kd)); 
-    subplotFunc(ta, aNVec, vNVec, pNVec, sprintf('\b kp = %f,  ki = %f,  kd = %f',kp,ki,kd)); 
+%    subplotFunc(ta, acc2Vec,v2vec, pos2Vec, sprintf('\b kp = %f,  ki = %f,  kd = %f',kp,ki,kd)); 
+%    subplotFunc(ta, aNVec, vNVec, pNVec, sprintf('\b kp = %f,  ki = %f,  kd = %f',kp,ki,kd)); 
 
+    
+    subplotFunc(ta, angAccVec,angVelVec, theta, sprintf('\b kp = %f,  ki = %f,  kd = %f',kp,ki,kd)); 
     %     figure
 %     plot(ta,v2vec(3,:));
 
