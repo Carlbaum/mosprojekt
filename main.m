@@ -74,14 +74,8 @@ close all
         errHeightPrev = errHeight;
         errHeight = ones(4,1) * (refHeight - pos(3)); %DETTA M?STE ?NDRAS N?R VI INF?R VINKLAR
         
-        errHeightPrev2 = errHeight2;
-        errHeight2 = ones(4,1) * (refHeight - pos2(3)); %DETTA M?STE ?NDRAS N?R VI INF?R VINKLAR
-        
         [inputs, integral] = pidHeight( kp,ki,kd,errHeight, errHeightPrev, h, integral);
         thrustTot = thrust(k,inputs);
-        
-        [inputs2, integral2] = pidHeight( kp,ki,kd,errHeight2, errHeightPrev2, h, integral2);
-        thrustTot2 = thrust(k,inputs2);
      
         rotMat = rotation( thetaVec );
         
@@ -91,24 +85,28 @@ close all
         asum = asum + a;
         %v = h*asum;
         v = velocity(a, t, v0);
+        pos = pos + h * v; %Euler
+        
+        aa = angAcceleration(I, inputs, L, b, k);
+        
+        posVec(:,counter) = pos;
+        velVec(:,counter) = v;
+        accVec(:,counter) = a;
 
+% Another attempt
+        errHeightPrev2 = errHeight2;
+        errHeight2 = ones(4,1) * (refHeight - pos2(3)); %DETTA M?STE ?NDRAS N?R VI INF?R VINKLAR
+        
+        [inputs2, integral2] = pidHeight( kp,ki,kd,errHeight2, errHeightPrev2, h, integral2);
+        thrustTot2 = thrust(k,inputs2);
         
         a2 = acceleration(g, rotMat, thrustTot2, m);
         v2 = v2 + h*a2;
-        
-        aa = angAcceleration(I, inputs, L, b, k);
-
-        pos = pos + h * v; %Euler
-        
         pos2 = pos2 + h * v2; %Euler
         
         v2vec(:,counter) = v2;
         pos2Vec(:,counter) = pos2;
         acc2Vec(:,counter) = a2;
-        
-        posVec(:,counter) = pos;
-        velVec(:,counter) = v;
-        accVec(:,counter) = a;
         
 %The other aproach
         eNprev = eN;
