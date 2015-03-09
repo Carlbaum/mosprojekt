@@ -1,37 +1,44 @@
 function main()
-close all
+%close all
   % Constants
     g = 9.82;    % gravity
     m = 1.0;     % mass of copter
     L = 0.25;    % distance to center
-    k = 3e-4;    % propeller constant
-    b = 0;       % drag coefficent
+    k = 3e-5;    % propeller constant
+    b = 1e-7;       % drag coefficent
 
-  % PID-coefficients
-    kp = 5.0;
-    ki = 2.0;
+  % PID-coefficients (Height)
+    kp = 1.0;
+    ki = 0.50;
     kd = 0.06;
+  % PID-coefficients (angles)
+    Kp = 2.50;
+    Ki = 2.0;
+    Kd = 0.06;
 
   % Initial values
-    a = [ 0 ; 0 ; -g ];
+    acc = [ 0 ; 0 ; -g ];
     I = [0.025 0 0; 0 0.025 0; 0 0 0.05];
     v0 = zeros(3,1);
-    v = v0;
-    v2 = v0;
-    a2 = a;
-    pos = zeros(3,1);
+    vel = v0;
+%     v2 = v0;
+%     a2 = a;
+    pos = [0; 0; 0];
 
-    pos2 = zeros(3,1);
+%     pos2 = zeros(3,1);
 
-    theta = zeros(3,1);
+    theta = [degtorad(25);0;0]; % angles; [roll;pitch;yaw]
+    angVel = zeros(3,1);
+    angAcc = zeros(3,1);    
     
     refHeight = 10;
-    errHeight = ones(4,1)*(pos(3)-refHeight); %
-    integral = zeros(4,1);
+    errHeight = refHeight-pos(3); %ones(4,1)*(pos(3)-refHeight); %
+    pidIntegral = zeros(3,1);
+    integral = 0;
     %inputs = zeros(4,1);
-    errHeight2 = ones(4,1)*(pos2(3)-refHeight); %
-    integral2 = zeros(4,1);
-    
+%     errHeight2 = ones(4,1)*(pos2(3)-refHeight); %
+%     integral2 = zeros(4,1);
+%     
   % Time variables
     h = 0.001; % step length / delta time
     tStart = 0;
@@ -39,62 +46,87 @@ close all
     ta = tStart:h:tStop;
     counter = 0;
    
-  % Variables to store values for plots  
+  % Preallocate variables to store values for plots  
     posVec = zeros(3,numel(ta));
     velVec = zeros(3,numel(ta));
     accVec = zeros(3,numel(ta));
+    thetaVec = zeros(3,numel(ta));
+    angAccVec = zeros(3,numel(ta));
+    angVelVec = zeros(3,numel(ta));
     
-    v2vec  = zeros(3,numel(ta));
-    acc2Vec  = zeros(3,numel(ta));
-    pos2Vec  = zeros(3,numel(ta));
-    
+%     v2vec  = zeros(3,numel(ta));
+%     acc2Vec  = zeros(3,numel(ta));
+%     pos2Vec  = zeros(3,numel(ta));
+%     
 %     angVec = zeros(3,numel(ta));
 %     angVec = zeros(3,numel(ta));
 %     angVec = zeros(3,numel(ta));
     
   %Variables for another aproach
-    aN = a; 
-    vN = v;
-    pN = pos;
+%     aN = a; 
+%     vN = v;
+%     pN = pos;
     
-    pNVec = posVec;
-    vNVec = velVec;
-    aNVec = accVec;
-    sumAN = zeros(3,1);
-    
-    eN =  ones(4,1)*(pN(3)-refHeight);
-    integralN = 0;
-    %inputsN= zeros(4,1);
-    %thrustTotN = zeros(4,1);
-    asum = 0;
+%     pNVec = posVec;
+%     vNVec = velVec;
+%     aNVec = accVec;
+%     sumAN = zeros(3,1);
+%     
+%     eN =  ones(4,1)*(pN(3)-refHeight);
+%     integralN = 0;
+%     %inputsN= zeros(4,1);
+%     %thrustTotN = zeros(4,1);
+%     asum = 0;
        
     for t = ta;
         counter = counter +1;
        
-        errHeightPrev = errHeight;
-        errHeight = ones(4,1) * (refHeight - pos(3)); %DETTA M?STE ?NDRAS N?R VI INF?R VINKLAR
+        if (max(abs(angVel)) > 0.01)
+            windUpConst = 1;
+        else
+            windUpConst = 1;
+        end
         
-        [inputs, integral] = pidHeight( kp,ki,kd,errHeight, errHeightPrev, h, integral);
-        thrustTot = thrust(k,inputs);
-     
+
+    % Compute error and inputs.
+        errHeightPrev = errHeight;
+        errHeight = refHeight - pos(3);
+       % thrustTot = (m * g) / (cos(theta(1))*cos(theta(2))*k);
+        [thrustTot, integral] = pidHeight( kp,ki,kd,errHeight, errHeightPrev, h, integral);
+        
+        pidIntegral = pidIntegral .* windUpConst + theta .* h;
+        e = Kp * theta + Ki * pidIntegral + Kd * angVel ;
+        
+        inputs(1) = thrustTot/4 - (e(3) * I(9))/(4 * b) - (e(1) * I(1))/(2 * k * L);
+        inputs(3) = thrustTot/4 - (e(3) * I(9))/(4 * b) + (e(1) * I(1))/(2 * k * L);
+        inputs(2) = thrustTot/4 + (e(3) * I(9))/(4 * b) - (e(2) * I(5))/(2 * k * L);
+        inputs(4) = thrustTot/4 + (e(3) * I(9))/(4 * b) + (e(2) * I(5))/(2 * k * L);
+        
         rotMat = rotation( theta );
+        %compute position of each rotor..
+        
+         
+        
+        %[t, integral] = pidHeight( kp,ki,kd,errHeight, errHeightPrev, h, integral);
+        %thrustTot = thrust(k,inputs);
+     
+        
         
         %TODO uppdatera vinklar
         
         %Acceleration till position
-        a = acceleration(g, rotMat, thrustTot, m);
-        asum = asum + a;
+        acc = acceleration(g, rotMat, thrustTot, m);
+        %asum = asum + acc;
         %v = h*asum;
-        v = velocity(a, t, v0);
-        pos = pos + h * v; %Euler
+        vel = velocity(acc, t, v0);
+        pos = pos + h * vel; %Euler
         
         posVec(:,counter) = pos;
-        velVec(:,counter) = v;
-        accVec(:,counter) = a;
+        velVec(:,counter) = vel;
+        accVec(:,counter) = acc;
         
         %Vinkelacceleration till vinklar
         angAcc = angAcceleration(I, inputs, L, b, k);
-        
         angVel = angVelocity(angAcc, t);
         theta = theta + h*angVel;   %Euler
       
@@ -102,36 +134,36 @@ close all
         angVelVec(:,counter) = angVel;
         angAccVec(:,counter) = angAcc;
 
-% Another attempt
-        errHeightPrev2 = errHeight2;
-        errHeight2 = ones(4,1) * (refHeight - pos2(3)); %DETTA M?STE ?NDRAS N?R VI INF?R VINKLAR
-        
-        [inputs2, integral2] = pidHeight( kp,ki,kd,errHeight2, errHeightPrev2, h, integral2);
-        thrustTot2 = thrust(k,inputs2);
-        
-        a2 = acceleration(g, rotMat, thrustTot2, m);
-        v2 = v2 + h*a2;
-        pos2 = pos2 + h * v2; %Euler
-        
-        v2vec(:,counter) = v2;
-        pos2Vec(:,counter) = pos2;
-        acc2Vec(:,counter) = a2;
-        
-%The other aproach
-        eNprev = eN;
-        eN = refHeight - pN(3);
-
-        [inputsN, integralN] = pidHeightN( eN, eNprev, h, integralN);
-        thrustTotN = thrust(k,inputsN);
-
-        aN = -[0;0;g] + (rotMat * [0;0;thrustTotN]) / m;
-        sumAN = aN + sumAN;
-        vN = h * sumAN;
-        pN = pN + vN*h;
-        
-        pNVec(:,counter) = pN;
-        vNVec(:,counter) = vN;
-        aNVec(:,counter) = aN;
+% % Another attempt
+%         errHeightPrev2 = errHeight2;
+%         errHeight2 = ones(4,1) * (refHeight - pos2(3)); %DETTA M?STE ?NDRAS N?R VI INF?R VINKLAR
+%         
+%         [inputs2, integral2] = pidHeight( kp,ki,kd,errHeight2, errHeightPrev2, h, integral2);
+%         thrustTot2 = thrust(k,inputs2);
+%         
+%         a2 = acceleration(g, rotMat, thrustTot2, m);
+%         v2 = v2 + h*a2;
+%         pos2 = pos2 + h * v2; %Euler
+%         
+%         v2vec(:,counter) = v2;
+%         pos2Vec(:,counter) = pos2;
+%         acc2Vec(:,counter) = a2;
+%         
+% %The other aproach
+%         eNprev = eN;
+%         eN = refHeight - pN(3);
+% 
+%         [inputsN, integralN] = pidHeightN( eN, eNprev, h, integralN);
+%         thrustTotN = thrust(k,inputsN);
+% 
+%         aN = -[0;0;g] + (rotMat * [0;0;thrustTotN]) / m;
+%         sumAN = aN + sumAN;
+%         vN = h * sumAN;
+%         pN = pN + vN*h;
+%         
+%         pNVec(:,counter) = pN;
+%         vNVec(:,counter) = vN;
+%         aNVec(:,counter) = aN;
     end
 
     %
@@ -140,7 +172,7 @@ close all
 %    subplotFunc(ta, aNVec, vNVec, pNVec, sprintf('\b kp = %f,  ki = %f,  kd = %f',kp,ki,kd)); 
 
     %Plottar vinklar, vinkelhastighet, vinkelacceleration
-    subplotFunc(ta, angAccVec,angVelVec, theta, sprintf('\b kp = %f,  ki = %f,  kd = %f',kp,ki,kd),2); 
+    subplotFunc(ta, angAccVec,angVelVec, thetaVec, sprintf('\b kp = %f,  ki = %f,  kd = %f',kp,ki,kd),2); 
     %     figure
 %     plot(ta,v2vec(3,:));
 
@@ -156,10 +188,10 @@ end
 
 function tau = torques(inputs, L, b, k)
 
-tau = [
-    L*k*(inputs(1)-inputs(3)) 
-    L*k*(inputs(2)-inputs(4))
-    b*(inputs(1)-inputs(2)+inputs(3)-inputs(4))
+    tau = [
+        L*k*(inputs(1)-inputs(3)) 
+        L*k*(inputs(2)-inputs(4))
+        b*(inputs(1)-inputs(2)+inputs(3)-inputs(4))
     ];
     
 end
@@ -185,7 +217,7 @@ end
 function [input,integral] = pidHeight(kp,ki,kd,errHeight, errHeightPrev,h,integral)
     integral = integral + errHeight*h;
     derivative = ((errHeight-errHeightPrev)./h);
-    input = (kp*errHeight + ki*integral + kd*derivative)./4;
+    input = (kp*errHeight + ki*integral + kd*derivative);%./4;
     
     control = input < 0; % We cant have negative input, therefore
     input(control) = 0;  % we set all negative values to zero
