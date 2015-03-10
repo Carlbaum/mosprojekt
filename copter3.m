@@ -1,4 +1,4 @@
-function copter2()
+function copter3()
     clear all
     % konstanter
     g = 9.82;       % gravitationskonstant
@@ -53,11 +53,13 @@ function copter2()
 %     KPosDD = 0.5;
 %     KAngP  = 4;
 %     KAngD  = 0.50;
-KPosP = 4.0;
-KPosD = 5.50;
-KPosDD = 0.75;
+KPosP = [ 4.0 ; 0.0 ; 4.0 ];
+KPosD = [ 5.50 ; 0 ; 5.50 ];
+KPosDD =[ 0.75 ; 0; 0.75 ];
 KAngP = 12.5;
+KAngPY = 12.5;
 KAngD = 1.50;
+KAngDY = 1.50;
     KAngDD = 0.0;%5;
     % tidsspann, sekunder
     tStart = 0;
@@ -89,7 +91,7 @@ KAngD = 1.50;
         errVel = -vel; % it's really  refVel-vel.. but refVel = [0,0,0];
         errAcc = -acc; % it's really  refAcc-acc.. but refAcc = [0,0,0];
         
-        dvec = KPosP*errPos + KPosD*errVel + KPosDD*errAcc;
+        dvec = KPosP.*errPos + KPosD.*errVel + KPosDD.*errAcc;
         dx = dvec(1);
         dy = dvec(2);
         dz = dvec(3);
@@ -138,9 +140,9 @@ KAngD = 1.50;
              totalThrust = 0;
         end
                     
-        torquePhi   = ( KAngP*(phiC - phi)   + KAngD*(phiDotC  - phiDot ) + KAngDD*(phiDDC  - phiDD ) )*I(1,1);
-        torqueTheta = ( KAngP*(thetaC-theta) + KAngD*(thetaDotC-thetaDot) + KAngDD*(thetaDDC-thetaDD) )*I(2,2);
-        torquePsi   = ( KAngP*(psiRef- psi ) + KAngD*(psiDotRef- psiDot ) )*I(3,3);
+        torquePhi   = ( KAngP *(phiC - phi)   + KAngD *(phiDotC  - phiDot ) )*I(1,1);
+        torqueTheta = ( KAngPY*(thetaC-theta) + KAngDY*(thetaDotC-thetaDot) )*I(2,2);
+        torquePsi   = ( KAngP *(psiRef- psi ) + KAngD *(psiDotRef- psiDot ) )*I(3,3);
         tau = [torquePhi;torqueTheta;torquePsi];
         
         % Calculate inputs(each rotor's angular velocity (angVel)).. 
@@ -188,7 +190,7 @@ KAngD = 1.50;
     movegui('northeast') 
     title('Angles')
     legend('roll','pitch','yaw')
-    titleString = sprintf('Kp = %0.2f,  Kd = %0.2f',KAngP,KAngD);
+    titleString = sprintf('Kp = %0.2f,  Kd = %0.2f',KAngPY,KAngDY);
     ha = axes('Position',[0 0.9 1 1],'Xlim',[0 1],'Ylim',[0 1],'Box','off','Visible','off','Units','normalized', 'clipping' , 'off');
     text(0.5, 0.1,titleString,'HorizontalAlignment' ,'center','VerticalAlignment', 'top');
     
