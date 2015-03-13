@@ -2,15 +2,16 @@ function copter3()
     clear all
     % konstanter
     g = 9.82;       % gravitationskonstant
-    m = 1;          % massa
+    m = 0.5;          % massa
     L = 0.25;       % l?ngd fr?n kroppens centrum till mitten av en propeller;
     k = 3e-6;   % propellerkonstant, inkl. lufttryck etc.
     b = 1e-7;          % drag constant
-    I = diag([1 1 2].*0.025); % tr?ghetsmoment f?r copterns vridning
+    I = diag([1 1 2].*0.005); % tr?ghetsmoment f?r copterns vridning
 %     IMR = 1;                  % rotorernas tr?ghetsmoment
+    
 
     % initialvillkor
-    eta      = [ -pi/9; pi/4 ; 0 ]; % vinklar; roll, pitch, yaw
+    eta      = [ -pi/9; pi/11 ; 0 ]; % vinklar; roll, pitch, yaw
     phiDot   = 0; % vinkelhastighet
     thetaDot = 0;
     psiDot   = 0;
@@ -26,20 +27,20 @@ function copter3()
     
     disturbanceForces = [0.0;0.0;0.0];
     
-    pos = [0;0;0]; % globala koord. systemet
+    pos = [0;0;10]; % globala koord. systemet
     vel = [0;0;0];
     acc = acceleration(g,m,eta,disturbanceForces,0);
 
     % referenser
-    refPos = [  0.5;  -0.5; 0.75];   % Dessa ska kunna ?ndras av anv?ndaren
+    refPos = [  2;  0; 16];   % Dessa ska kunna ?ndras av anv?ndaren
     refEta = [  0;  0;  0];
-    %phiC   = 0;
-    %thetaC = 0;
+    phiC   = 0;
+    thetaC = 0;
     psiRef = 0;             % Denna ska kunna ?ndras av anv?ndaren
     
     % Variables for PID-kontroller
-%     errPos   = refPos - pos;
-%     errEta = refEta - eta;
+    errPos   = refPos - pos;
+    errEta = refEta - eta;
 %     err = [errPos; errEta];
     
 %     integral = 0;
@@ -54,11 +55,11 @@ function copter3()
 %     KAngD  = 0.50;
 KPosP = [ 1.0 ; 4.0 ; 4.0 ];
 KPosD = [ 1 ; 5.5 ; 5.50 ];
-KPosDD =[ 0.750 ; 0.75; 0.75 ];
+KPosDD =[ 0.50 ; 0.75; 0.75 ];
 KAngP = 12.5;
 KAngPY = 12.5;
 KAngD = 1.50;
-KAngDY = 5.0;
+KAngDY = 3.50;
     KAngDD = 0.0;%5;
     % tidsspann, sekunder
     tStart = 0;
@@ -102,13 +103,7 @@ KAngDY = 5.0;
         W = [ 1, 0, -sin(theta) ;
               0, cos(phi), cos(theta)*sin(phi);
               0, -sin(phi), cos(theta)*cos(phi)];
-       if ~exist('phiC') || ~exist('thetaC')
-           phiC = asin((dx*sin(psi) - dy*cos(psi))...
-            /(dx^2 + dy^2 + (dz+g)^2));
-        thetaC = atan((dx*cos(psi) + dy*sin(psi))...
-            /(dz+g));
-       end
-          
+       
         phiCPrev   = phiC;
         thetaCPrev = thetaC;
 %        psiRPrev   = psiRef;
@@ -186,8 +181,7 @@ KAngDY = 5.0;
         velStored(:,counter) = vel;
         posStored(:,counter) = pos;
     end
-    c
-    subplotFunc(time,accStored,'Acceleration',velStored,'Velocity',posStored,'Position','');
+    subplotFunc(time,accStored,'Acceleration',velStored,'Velocity',posStored,'Position',sprintf('Kp = %0.2f, Kd = %0.2f, Kdd = %0.2f',KPosP,KPosD,KPosDD));
     figure
     plot(time,etaStored(1,:),'r');
     hold on
@@ -196,9 +190,9 @@ KAngDY = 5.0;
     movegui('northeast') 
     title('Angles')
     legend('roll','pitch','yaw')
-    %titleString = sprintf('Kp = %0.2f,  Kd = %0.2f',KAngPY,KAngDY);
-    %ha = axes('Position',[0 0.9 1 1],'Xlim',[0 1],'Ylim',[0 1],'Box','off','Visible','off','Units','normalized', 'clipping' , 'off');
-    %text(0.5, 0.1,titleString,'HorizontalAlignment' ,'center','VerticalAlignment', 'top');
+    titleString = sprintf('Kp = %0.2f,  Kd = %0.2f',KAngPY,KAngDY);
+    ha = axes('Position',[0 0.9 1 1],'Xlim',[0 1],'Ylim',[0 1],'Box','off','Visible','off','Units','normalized', 'clipping' , 'off');
+    text(0.5, 0.1,titleString,'HorizontalAlignment' ,'center','VerticalAlignment', 'top');
     
     figure
      plot(time,inputStored(1,:),'r');
@@ -256,7 +250,6 @@ function subplotFunc(x,y1,y1Str,y2,y2Str,y3,y3Str,titleStr)
                     plot(x, y3(3,:), 'b')
                     title(y3Str)%'Position')
 
-    legend('x (forwards)','y (sidewards)','z (height)')
                     ha = axes('Position',[0 0.9 1 1],'Xlim',[0 1],'Ylim',[0 1],'Box','off','Visible','off','Units','normalized', 'clipping' , 'off');
 
     text(0.5, 0.1,titleStr,'HorizontalAlignment' ,'center','VerticalAlignment', 'top');

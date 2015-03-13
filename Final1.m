@@ -1,4 +1,4 @@
-function new4()
+function Final1()
 %close all
   % Constants
     g = 9.82;    % gravity
@@ -10,11 +10,11 @@ function new4()
   % PID-coefficients (Height)
     kp = 0.75;
     ki = 0.570;
-    kd = 0.0006;
+    kd = 0.03;
   % PID-coefficients (angles)
     Kp = 0.0250;
-    Ki = 0;%0.020;
-    Kd = 0.00006;
+    Ki = 0.020;
+    Kd = 0.0006;
 
   % Initial values
     acc = [ 0 ; 0 ; -g ];
@@ -22,30 +22,24 @@ function new4()
     v0 = zeros(3,1);
     vel = v0;
     pos = [0; 0; 0];
-    theta = [degtorad(25);degtorad(0);degtorad(-0)]; % angles; [roll;pitch;yaw]
+    theta = [degtorad(-25);degtorad(45);degtorad(-0)]; % angles; [roll;pitch;yaw]
     angVel = zeros(3,1);
     angAcc = zeros(3,1);    
     
     refHeight = 10;
     errHeight = refHeight-pos(3); %ones(4,1)*(pos(3)-refHeight); %
-    refPos = [0;0;refHeight];
-    errGlobalPos = refPos - pos;
-    errLocalPos = 0;
-    
+%    refPos = [0;0;refHeight];
+     
     refAngles = zeros(3,1);
     errAngles = refAngles - theta;
     
-    pidIntegral = zeros(3,1);
     heightIntegral = 0;
-    posIntegral = zeros(3,1);
-    localPosIntegral = zeros(3,1);
-    globalPosIntegral = zeros(3,1);
     anglesIntegral = zeros(3,1);
     
   % Time variables
-    h = 0.01; % step length / delta time
+    h = 0.001; % step length / delta time
     tStart = 0;
-    tStop = 100.0;
+    tStop = 25.0;
     ta = tStart:h:tStop;
     counter = 0;
    
@@ -56,8 +50,7 @@ function new4()
     thetaVec = zeros(3,numel(ta));
     angAccVec = zeros(3,numel(ta));
     angVelVec = zeros(3,numel(ta));
-    inputVec = zeros(4,numel(ta));
-       inputs=zeros(4,1);
+       
     for t = ta;
         counter = counter +1;
         
@@ -69,7 +62,6 @@ function new4()
         posVec(:,counter) = pos;
         velVec(:,counter) = vel;
         accVec(:,counter) = acc;
-        inputVec(:,counter) = inputs;
 
         %calculate errors
         errHeightPrev   = errHeight;
@@ -79,82 +71,35 @@ function new4()
         errAngles       = refAngles - theta;
         
         rotMat = rotation( theta );
-%         errGlobalPosPrev = errGlobalPos; 
-%         errGlobalPos = refPos - pos; % is a vector from the body center to the reference point
-%         errLocalPosPrev = rotMat\errGlobalPosPrev; 
-%         errLocalPos = rotMat\errGlobalPos; % should be the same vector, but expressed in the local coordinate system
-
-        [thrustTot, heightIntegral] = pidHeight( kp,ki,kd,errHeight, errHeightPrev, h, heightIntegral);
-%         [thrustTotLocal, localPosIntegral] = pidPos( kp,ki,kd,errLocalPos, errLocalPosPrev, h, localPosIntegral);
-%         [thrustTotGlobal, globalPosIntegral] = pidPos( kp,ki,kd,errGlobalPos, errGlobalPosPrev, h, globalPosIntegral);
-        [tau, anglesIntegral] = pidAngles(Kp, Ki, Kd, errAngles, errAnglesPrev, h, anglesIntegral);
-        %thrustTotGlobal = rotMat*thrustTotLocal;
-        %thrustTotLocal =  rotMat\thrustTotGlobal; % ty R*local = global
         
-%         inputs(1) = thrustTotGlobal(3)/4;% - thrustTotLocal(2)/2; % - yled om input(1) ?kar, d?rf?r 
-%         inputs(3) = thrustTotGlobal(3)/4;% + thrustTotLocal(2)/2; % + yled
-%         inputs(2) = thrustTotGlobal(3)/4;% - thrustTotLocal(1)/2; % + xled
-%         inputs(4) = thrustTotGlobal(3)/4;% + thrustTotLocal(1)/2; % - xled
-%         
-        inputs(1) = thrustTot(1)/4 + tau(1)/2;% - thrustTot(2)/2; % -yled om input(1) ?kar, d?rf?r 
+        [thrustTot, heightIntegral] = pidHeight( kp,ki,kd,errHeight, errHeightPrev, h, heightIntegral);
+        [tau, anglesIntegral] = pidAngles(Kp, Ki, Kd, errAngles, errAnglesPrev, h, anglesIntegral);
+        
+        inputs(1) = thrustTot(1)/4 + tau(1)/2;% - thrustTot(2)/2;  
         inputs(3) = thrustTot(1)/4 - tau(1)/2;% + thrustTot(2)/2;
         inputs(2) = thrustTot(1)/4 + tau(2)/2;% - thrustTot(1)/2;
         inputs(4) = thrustTot(1)/4 - tau(2)/2;% + thrustTot(1)/2;
-        
-%         if (max(abs(angVel)) > 0.01)
-%             windUpConst = 1;
-%         else
-%             windUpConst = 1;
-%         end
-%         
-          % thrustTot = (m * g) / (cos(theta(1))*cos(theta(2))*k);
-        %pidIntegral = pidIntegral .* windUpConst + theta .* h;
-       % e = Kp * theta + Ki * pidIntegral + Kd * angVel ;
-        
-%         inputs(1) = thrustTot/4 - (e(3) * I(9))/(4 * b) - (e(1) * I(1))/(2 * k * L);
-%         inputs(3) = thrustTot/4 - (e(3) * I(9))/(4 * b) + (e(1) * I(1))/(2 * k * L);
-%         inputs(2) = thrustTot/4 + (e(3) * I(9))/(4 * b) - (e(2) * I(5))/(2 * k * L);
-%         inputs(4) = thrustTot/4 + (e(3) * I(9))/(4 * b) + (e(2) * I(5))/(2 * k * L);
-%         
-        
-        %[t, integral] = pidHeight( kp,ki,kd,errHeight, errHeightPrev, h, integral);
-        %thrustTot = thrust(k,inputs);
-        
-        %Vinkelacceleration till vinklar
-%         angAcc = angAcceleration(I, L, b, k,inputs);
         angAcc = angAcceleration(I, L, b, k,tau);%inputs);%tau);
         angVel = angVelocity(angAcc, t);
         theta = theta + h*angVel;   %Euler
         
         %Acceleration till position
         acc = acceleration(g, rotMat, thrustTot, m);
-%         acc = accelerationNew(g, thrustTotGlobal, m);
         vel = velocity(acc, t, v0);
-        pos = pos + h * vel; %Euler
-        
+        pos = pos + h * vel;
     end
 
     %Plot acceleration, velocity and position
     subplotFunc(ta, accVec,velVec, posVec, sprintf('\b kp = %f,  ki = %f,  kd = %f',kp,ki,kd),1); 
     %Plottar vinklar, vinkelhastighet, vinkelacceleration
     subplotFunc(ta, angAccVec,angVelVec, radtodeg(thetaVec), sprintf('\b kp = %f,  ki = %f,  kd = %f',Kp,Ki,Kd),2); 
-    figure
-    plot(ta,inputVec(1,:),'r','linewidth',4);
-    hold on
-    plot(ta,inputVec(2,:),'g','linewidth',3);
-    plot(ta,inputVec(3,:),'b','linewidth',2);
-    plot(ta,inputVec(4,:),'m','linewidth',1);
+
 
 end
 
 function acc = acceleration(g , rotMat, thrustTot, m)
     gravity = [0; 0; -g];
     acc = gravity + (rotMat * [0;0;thrustTot]) ./ m; %3x1-vector 
-end
-
-function acc = accelerationNew(g , thrustTot, m)
-    gravity = [0; 0; -g];
-    acc = gravity + thrustTot ./ m; %3x1-vector 
 end
 
 % Compute torques, given current inputs, length, drag coefficient, and thrust coefficient.
@@ -247,7 +192,7 @@ function subplotFunc(x,y1,y2,y3,str,val)
             plot(x, y1(2,:), 'g')
             plot(x, y1(3,:), 'b')
             if (val == 1)
-               title('Acceleration')
+               title('Acceleration (m/s^2)')
             end
                     
             if(val == 2)
@@ -260,12 +205,13 @@ function subplotFunc(x,y1,y2,y3,str,val)
                 plot(x, y2(2,:),'g')
                 plot(x, y2(3,:), 'b')
                 if (val == 1)
-                        title('Velocity')
+                        title('Velocity (m/s)')
                         legend('x (forwards)','y (sideways)','z (height)', 'Location', 'NorthEastOutside')
                     end
                     
                     if(val == 2)
-                         title('angular velocity (rad/s)')
+                        title('angular velocity (rad/s)')
+                        legend('Rotation around x-axis','Rotation around y-axis','Rotation around z-axis', 'Location', 'NorthEastOutside')
                     end  
             
                     subplot(3,1,3)
@@ -274,7 +220,7 @@ function subplotFunc(x,y1,y2,y3,str,val)
                     plot(x, y3(2,:), 'g')
                     plot(x, y3(3,:), 'b')   
                     if (val == 1)
-                        title('Position')
+                        title('Position (m)')
                     end
                     
                     if(val == 2)

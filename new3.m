@@ -22,28 +22,28 @@ function new3()
     v0 = zeros(3,1);
     vel = v0;
     pos = [0; 0; 0];
-    theta = [degtorad(25);degtorad(0);degtorad(-0)]; % angles; [roll;pitch;yaw]
+    theta = [degtorad(-25);degtorad(45);degtorad(-0)]; % angles; [roll;pitch;yaw]
     angVel = zeros(3,1);
     angAcc = zeros(3,1);    
     
     refHeight = 10;
     errHeight = refHeight-pos(3); %ones(4,1)*(pos(3)-refHeight); %
     refPos = [0;0;refHeight];
-    errGlobalPos = refPos - pos;
-    errLocalPos = 0;
-    
+%     errGlobalPos = refPos - pos;
+%     errLocalPos = 0;
+%     
     refAngles = zeros(3,1);
     errAngles = refAngles - theta;
     
-    pidIntegral = zeros(3,1);
+%     pidIntegral = zeros(3,1);
     heightIntegral = 0;
-    posIntegral = zeros(3,1);
-    localPosIntegral = zeros(3,1);
-    globalPosIntegral = zeros(3,1);
+%     posIntegral = zeros(3,1);
+%     localPosIntegral = zeros(3,1);
+%     globalPosIntegral = zeros(3,1);
     anglesIntegral = zeros(3,1);
     
   % Time variables
-    h = 0.01; % step length / delta time
+    h = 0.001; % step length / delta time
     tStart = 0;
     tStop = 25.0;
     ta = tStart:h:tStop;
@@ -239,7 +239,7 @@ function subplotFunc(x,y1,y2,y3,str,val)
             plot(x, y1(2,:), 'g')
             plot(x, y1(3,:), 'b')
             if (val == 1)
-               title('Acceleration')
+               title('Acceleration (m/s^2)')
             end
                     
             if(val == 2)
@@ -252,12 +252,13 @@ function subplotFunc(x,y1,y2,y3,str,val)
                 plot(x, y2(2,:),'g')
                 plot(x, y2(3,:), 'b')
                 if (val == 1)
-                        title('Velocity')
+                        title('Velocity (m/s)')
                         legend('x (forwards)','y (sideways)','z (height)', 'Location', 'NorthEastOutside')
                     end
                     
                     if(val == 2)
-                         title('angular velocity (rad/s)')
+                        title('angular velocity (rad/s)')
+                        legend('Rotation around x-axis','Rotation around y-axis','Rotation around z-axis', 'Location', 'NorthEastOutside')
                     end  
             
                     subplot(3,1,3)
@@ -266,7 +267,7 @@ function subplotFunc(x,y1,y2,y3,str,val)
                     plot(x, y3(2,:), 'g')
                     plot(x, y3(3,:), 'b')   
                     if (val == 1)
-                        title('Position')
+                        title('Position (m)')
                     end
                     
                     if(val == 2)

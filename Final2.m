@@ -1,4 +1,4 @@
-function copter3()
+function Final2()
     clear all
     % konstanter
     g = 9.82;       % gravitationskonstant
@@ -8,18 +8,17 @@ function copter3()
     b = 1e-7;          % drag constant
     I = diag([1 1 2].*0.025); % tr?ghetsmoment f?r copterns vridning
 %     IMR = 1;                  % rotorernas tr?ghetsmoment
+    
 
     % initialvillkor
     eta      = [ -pi/9; pi/4 ; 0 ]; % vinklar; roll, pitch, yaw
+    
     phiDot   = 0; % vinkelhastighet
     thetaDot = 0;
     psiDot   = 0;
+    
     etaDot = [phiDot;thetaDot;psiDot];
-%     etaDotDot = zeros(3,1);
-%         % body frame rotations
-%         bAngVel = zeros(3,1); 
-%         bAngAcc = zeros(3,1);
-
+    
     input = zeros(4,1); % vinkelhastigheter p? varje rotor
     
 %     thrust = [0;0;0];         % agerar bara i kroppens lokala och positiva z-led
@@ -32,34 +31,18 @@ function copter3()
 
     % referenser
     refPos = [  0.5;  -0.5; 0.75];   % Dessa ska kunna ?ndras av anv?ndaren
-    refEta = [  0;  0;  0];
-    %phiC   = 0;
-    %thetaC = 0;
     psiRef = 0;             % Denna ska kunna ?ndras av anv?ndaren
+    psiDotRef = 0;
+        
+    % Variables for controller
+    KPosP = [ 1.0 ; 4.0 ; 4.0 ];
+    KPosD = [ 1 ; 5.5 ; 5.50 ];
+    KPosDD =[ 0.750 ; 0.75; 0.75 ];
+    KAngP = 12.5;
+    KAngPY = 12.5;
+    KAngD = 1.50;
+    KAngDY = 5.0;
     
-    % Variables for PID-kontroller
-%     errPos   = refPos - pos;
-%     errEta = refEta - eta;
-%     err = [errPos; errEta];
-    
-%     integral = 0;
-%     Kmain = 1; % dimensionsl?s om e och resultatet av PID:en, u, ?r i samma enhet 
-%     Ti = 1; % tid i sekunder 
-%     Td = 1; % tid i sekunder 
-    
-%     KPosP  = 0.85;
-%     KPosD  = 0.75;
-%     KPosDD = 0.5;
-%     KAngP  = 4;
-%     KAngD  = 0.50;
-KPosP = [ 1.0 ; 4.0 ; 4.0 ];
-KPosD = [ 1 ; 5.5 ; 5.50 ];
-KPosDD =[ 0.750 ; 0.75; 0.75 ];
-KAngP = 12.5;
-KAngPY = 12.5;
-KAngD = 1.50;
-KAngDY = 5.0;
-    KAngDD = 0.0;%5;
     % tidsspann, sekunder
     tStart = 0;
     tStop = 50;
@@ -71,17 +54,12 @@ KAngDY = 5.0;
     posStored = [ pos zeros(3, totalSteps-1)];
     velStored = [ vel zeros(3, totalSteps-1)];
     accStored = [ acc zeros(3, totalSteps-1)];
-
     etaStored = [ eta zeros(3, totalSteps-1)];
 
     inputStored = input;
    
     counter = 1;
-    phiDotC =0;
-    thetaDotC=0;
     c=0;
-    etaDotDot = [0;0;0];
-    psiDotRef = 0;
     for t = time(2:end) % f?rsta tidssteget behandlas redan innan loopen
         counter = counter + 1;
         
@@ -99,19 +77,20 @@ KAngDY = 5.0;
         theta = eta(2); % pitch
         psi   = eta(3); % yaw
         
+        %Conv. mat. from angVel in global coord. syst. to body coord. syst
         W = [ 1, 0, -sin(theta) ;
               0, cos(phi), cos(theta)*sin(phi);
               0, -sin(phi), cos(theta)*cos(phi)];
+          
        if ~exist('phiC') || ~exist('thetaC')
            phiC = asin((dx*sin(psi) - dy*cos(psi))...
             /(dx^2 + dy^2 + (dz+g)^2));
         thetaC = atan((dx*cos(psi) + dy*sin(psi))...
             /(dz+g));
        end
-          
+       
         phiCPrev   = phiC;
         thetaCPrev = thetaC;
-%        psiRPrev   = psiRef;
         
         % Commanded phi & theta.. 
         phiC = asin((dx*sin(psi) - dy*cos(psi))...
@@ -119,30 +98,21 @@ KAngDY = 5.0;
         thetaC = atan((dx*cos(psi) + dy*sin(psi))...
             /(dz+g));
         
-        phiDCPrev = phiDotC;
-        thetaDCPrev = thetaDotC;
-       % psiDRefPrev = psiDotRef;        
-        
+        % derivative
         phiDotC    = ( phiCPrev - phiC ) /tStep;
         thetaDotC  = (thetaCPrev-thetaC) /tStep;
-       % psiDotRef  = ( psiRPrev -psiRef) /tStep;
         
         phiDot   = etaDot(1);
         thetaDot = etaDot(2);
         psiDot   = etaDot(3);
         
-        phiDDC = ( phiDCPrev - phiDotC )/tStep;
-        thetaDDC = ( thetaDCPrev - thetaDotC )/tStep;
-        %psiDDC = ( psiDCPrev - psiDotC ) / tStep;
-        phiDD = etaDotDot(1);
-        thetaDD = etaDotDot(2);
-        
         totalThrust = m*(dx*( sin(theta)*cos(psi)*cos(phi) + sin(psi)*sin(phi) )...
                         +dy*( sin(theta)*sin(psi)*cos(phi) - cos(psi)*sin(phi) )...
                         +(dz+g)*cos(theta)*cos(phi));
+                    
         if totalThrust < 0
             c = c+1;
-             totalThrust = 0;
+             totalThrust = 0; % the generated thrust cant be negative
         end
                     
         torquePhi   = ( KAngP *(phiC - phi)   + KAngD *(phiDotC  - phiDot ) )*I(1,1);
@@ -156,23 +126,22 @@ KAngDY = 5.0;
         input(3) = totalThrust/(4*k) + torqueTheta/(2*k*L) - torquePsi/(4*b); 
         input(2) = totalThrust/(4*k) - torquePhi  /(2*k*L) + torquePsi/(4*b); 
         input(4) = totalThrust/(4*k) + torquePhi  /(2*k*L) + torquePsi/(4*b);
-%         temp = input > 15/k/4;
+%         temp = input > 15/k/4; // To limit the possible acceleration 
 %         input(temp) = 15/k/4;
         
-        % Angular velocity and acceleration in the body frame
+        % Calculate the angular velocity and acceleration for the body frame
         bAngVel = W*etaDot;
         bAngAcc = I\(tau - cross(bAngVel, I*bAngVel));       
         
         % Uppdatera positioner och vinklar i systemet
-        % Uppdatera vinklar
         bAngVel   = bAngVel + bAngAcc*tStep;
         etaDot    = W\bAngVel;
         eta       = eta + etaDot*tStep;
         
-        etaDotDot = [0, etaDot(1)*cos(phi)*tan(theta)+etaDot(2)*sin(phi)/(cos(theta)^2), -etaDot(1)*sin(phi)*cos(theta)+etaDot(2)*cos(phi)/(cos(theta)^2);...
-             0, -etaDot(1)*sin(phi), -etaDot(1)*cos(phi);
-             0, (etaDot(1)/cos(theta))*(cos(phi)+sin(phi)*tan(theta)),(-etaDot(1)*sin(phi)+etaDot(2)*cos(phi)*tan(theta))/cos(theta)]...
-             *bAngVel + W\bAngAcc; 
+%         etaDotDot = [0, etaDot(1)*cos(phi)*tan(theta)+etaDot(2)*sin(phi)/(cos(theta)^2), -etaDot(1)*sin(phi)*cos(theta)+etaDot(2)*cos(phi)/(cos(theta)^2);...
+%              0, -etaDot(1)*sin(phi), -etaDot(1)*cos(phi);
+%              0, (etaDot(1)/cos(theta))*(cos(phi)+sin(phi)*tan(theta)),(-etaDot(1)*sin(phi)+etaDot(2)*cos(phi)*tan(theta))/cos(theta)]...
+%              *bAngVel + W\bAngAcc; 
                     
         % Ber?kna acceleration, hastighet och position
         acc = acceleration(g,m,eta,disturbanceForces,totalThrust);
