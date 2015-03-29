@@ -39,9 +39,12 @@ function Final1()
   % Time variables
     h = 0.001; % step length / delta time
     tStart = 0;
-    tStop = 25.0;
+    tStop = 5.0;
     ta = tStart:h:tStop;
     counter = 0;
+    
+
+    
    
   % Preallocate variables to store values for plots  
     posVec = zeros(3,numel(ta));
@@ -50,7 +53,7 @@ function Final1()
     thetaVec = zeros(3,numel(ta));
     angAccVec = zeros(3,numel(ta));
     angVelVec = zeros(3,numel(ta));
-       
+    tic   
     for t = ta;
         counter = counter +1;
         
@@ -88,11 +91,13 @@ function Final1()
         vel = velocity(acc, t, v0);
         pos = pos + h * vel;
     end
-
+    toc
+    disp('Done calulating!')
+    animate(posVec, thetaVec)
     %Plot acceleration, velocity and position
-    subplotFunc(ta, accVec,velVec, posVec, sprintf('\b kp = %f,  ki = %f,  kd = %f',kp,ki,kd),1); 
+    %subplotFunc(ta, accVec,velVec, posVec, sprintf('\b kp = %f,  ki = %f,  kd = %f',kp,ki,kd),1); 
     %Plottar vinklar, vinkelhastighet, vinkelacceleration
-    subplotFunc(ta, angAccVec,angVelVec, radtodeg(thetaVec), sprintf('\b kp = %f,  ki = %f,  kd = %f',Kp,Ki,Kd),2); 
+    %subplotFunc(ta, angAccVec,angVelVec, radtodeg(thetaVec), sprintf('\b kp = %f,  ki = %f,  kd = %f',Kp,Ki,Kd),2); 
 
 
 end
@@ -238,4 +243,46 @@ function subplotFunc(x,y1,y2,y3,str,val)
     end
 
 end
+
+function animate(posVec, thetaVec)
+  % 3D representation
+    width = 0.5;
+    length = 0.5;
+    height = 0.05;
+
+    vertices =  [0 0 0; 0 length 0; width length 0; width 0 0; 0 0 height; 0 length height; width length height; width 0 height];
+    vertices(:,1) =  vertices(:,1) - width/2;
+    vertices(:,2) =  vertices(:,2) - width/2;
+    vertices(:,3) =  vertices(:,3) - height/2;
+    vertices = (rotation([0;0;degtorad(45)])*vertices')';
+    
+    faces = [1 2 3 4; 2 6 7 3; 4 3 7 8; 1 5 8 4; 1 2 6 5; 5 6 7 8];
+
+    figure
+    hold on
+    plot(0:1,[0 0],'k->')
+    plot([0 0],0:1,'k-^')
+    plot3([0 0],[0 0],0:1,'k-^')
+    text(1,0,0,'  x')
+    text(0,1,0,'  y')
+    text(0,0,1,'  z')
+    cdata = [0 0 1
+             1 0 0
+             0 1 0
+             1 1 0
+             0 0 1
+             1 0 0
+             0 1 0
+             1 1 0];
+    c3d = patch('Vertices', vertices, 'Faces', faces, 'FaceColor','interp','FaceVertexCData',cdata);
+  
+    rotate3d on
+    axis equal vis3d
+    for i = 1:numel(posVec(1,:))-3
+        newVertices = (rotation(thetaVec(:,i))*vertices')';
+        set(c3d,'xdata', newVertices(:,1) + posVec(1,i), 'ydata', newVertices(:,2) + posVec(2,i), 'zdata', newVertices(:,3) + posVec(3,i),'Faces',faces);
+        %rotate(c3d,[0,0,1],1,posVec(:,i));
+        pause(0.0001)
+    end
+end 
 

@@ -1,5 +1,7 @@
 function Final2()
     clear all
+    close all
+    clc
     % konstanter
     g = 9.82;       % gravitationskonstant
     m = 1;          % massa
@@ -45,7 +47,7 @@ function Final2()
     
     % tidsspann, sekunder
     tStart = 0;
-    tStop = 50;
+    tStop = 30;
     tStep = 0.001;
     time = tStart:tStep:tStop;
     totalSteps = numel(time);
@@ -54,12 +56,13 @@ function Final2()
     posStored = [ pos zeros(3, totalSteps-1)];
     velStored = [ vel zeros(3, totalSteps-1)];
     accStored = [ acc zeros(3, totalSteps-1)];
-    etaStored = [ eta zeros(3, totalSteps-1)];
+    etaStored = [ radtodeg(eta) zeros(3, totalSteps-1)];
 
     inputStored = input;
    
     counter = 1;
     c=0;
+    tic
     for t = time(2:end) % f?rsta tidssteget behandlas redan innan loopen
         counter = counter + 1;
         
@@ -156,6 +159,9 @@ function Final2()
         posStored(:,counter) = pos;
     end
     c
+    toc
+    disp('Done calculating!')
+    tic
     subplotFunc(time,accStored,'Acceleration',velStored,'Velocity',posStored,'Position','');
     figure
     plot(time,etaStored(1,:),'r');
@@ -178,6 +184,10 @@ function Final2()
      movegui('south') 
      title('Inputs, angular velocities of each rotor')
      legend('Front rotor','Right rotor','Back rotor','Left rotor')
+     
+    toc
+    disp('Done plotting!')
+    animate(posStored, etaStored,refPos,tStep)
 end
 function acc = acceleration(g,m,eta,disturbanceForces,T)
     acc = [0;0;-g] + (rotation(eta)*[0;0;T])./m + disturbanceForces./m; 
@@ -259,4 +269,69 @@ end
 % end
 
 
+function animate(posVec, thetaVec,refPos,h)
+  % 3D representation
+    width = 0.5;
+    length = 0.5;
+    height = 0.05;
 
+    vertices =  [0 0 0; 0 length 0; width length 0; width 0 0; 0 0 height; 0 length height; width length height; width 0 height];
+    vertices(:,1) =  vertices(:,1) - width/2;
+    vertices(:,2) =  vertices(:,2) - width/2;
+    vertices(:,3) =  vertices(:,3) - height/2;
+    vertices = (rotation([0;0;degtorad(45)])*vertices')';
+    
+    faces = [1 2 3 4; 2 6 7 3; 4 3 7 8; 1 5 8 4; 1 2 6 5; 5 6 7 8];
+
+    figure('units','normalized',...
+		'position',[0.1, 0.1, 0.7, 0.7]);
+    axes('units','normalized',...
+    'position',[0.15, 0.15, 0.75, 0.8])
+	
+	t1 = uicontrol('style','text',...
+		'units','normalized',...
+		'position',[.45 .0 .2 .05],...
+        'horizontalalignment','left',...
+		'fontsize',20,...
+		'string','Time = 0');
+    hold on
+    plot(0:1,[0 0],'k->')
+    plot([0 0],0:1,'k-^')
+    plot3([0 0],[0 0],0:1,'k-^')
+    text(1,0,0,'  x')
+    text(0,1,0,'  y')
+    text(0,0,1,'  z')
+    cdata = [0 0 0
+             1 1 1
+             0 0 0
+             1 1 1
+             1 0 0
+             0 1 0
+             0 0 1
+             1 1 0];
+    maxX = max(posVec(1,:))+0.75;
+    maxY = max(posVec(2,:))+0.75;
+    maxZ = max(posVec(3,:))+0.75;
+    minX = min(posVec(1,:))-0.75;
+    minY = min(posVec(2,:))-0.75;
+    minZ = min(posVec(3,:))-0.75;
+    refVertices = (rotation(degtorad([0 0 0]))*vertices')';
+    ref = patch('Vertices', refVertices, 'Faces', faces,'EdgeColor','k','FaceColor','none','LineStyle','--','LineWidth', 0.1);
+    set(ref,'xdata', refVertices(:,1) + refPos(1), 'ydata', refVertices(:,2) + refPos(2), 'zdata', refVertices(:,3) + refPos(3),'Faces',faces);
+        
+    c3d = patch('Vertices', vertices, 'Faces', faces, 'FaceColor','interp','FaceVertexCData',cdata);
+    
+    rotate3d on
+    axis([minX maxX minY maxY minZ maxZ])
+    axis equal vis3d
+   
+    for i = 1:12:numel(posVec(1,:))
+        tic
+        set(t1,'string',['Time = ', num2str((i-1)*h)]);
+        newVertices = (rotation(degtorad(thetaVec(:,i)))*vertices')';
+        set(c3d,'xdata', newVertices(:,1) + posVec(1,i), 'ydata', newVertices(:,2) + posVec(2,i), 'zdata', newVertices(:,3) + posVec(3,i),'Faces',faces);
+        %rotate(c3d,[0,0,1],1,posVec(:,i));
+        pause(0.001)
+        toc
+    end
+end 
