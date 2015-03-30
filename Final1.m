@@ -1,5 +1,7 @@
 function Final1()
-%close all
+close all
+clear all
+clc
   % Constants
     g = 9.82;    % gravity
     m = 1.0;     % mass of copter
@@ -39,7 +41,7 @@ function Final1()
   % Time variables
     h = 0.001; % step length / delta time
     tStart = 0;
-    tStop = 5.0;
+    tStop = 10.0;
     ta = tStart:h:tStop;
     counter = 0;
     
@@ -93,13 +95,12 @@ function Final1()
     end
     toc
     disp('Done calulating!')
-    animate(posVec, thetaVec)
+
     %Plot acceleration, velocity and position
-    %subplotFunc(ta, accVec,velVec, posVec, sprintf('\b kp = %f,  ki = %f,  kd = %f',kp,ki,kd),1); 
+    subplotFunc(ta, accVec,velVec, posVec, sprintf('\b kp = %f,  ki = %f,  kd = %f',kp,ki,kd),1); 
     %Plottar vinklar, vinkelhastighet, vinkelacceleration
-    %subplotFunc(ta, angAccVec,angVelVec, radtodeg(thetaVec), sprintf('\b kp = %f,  ki = %f,  kd = %f',Kp,Ki,Kd),2); 
-
-
+    subplotFunc(ta, angAccVec,angVelVec, radtodeg(thetaVec), sprintf('\b kp = %f,  ki = %f,  kd = %f',Kp,Ki,Kd),2); 
+    animate(posVec, thetaVec,h)
 end
 
 function acc = acceleration(g , rotMat, thrustTot, m)
@@ -244,7 +245,7 @@ function subplotFunc(x,y1,y2,y3,str,val)
 
 end
 
-function animate(posVec, thetaVec)
+function animate(posVec, thetaVec,h)
   % 3D representation
     width = 0.5;
     length = 0.5;
@@ -258,7 +259,17 @@ function animate(posVec, thetaVec)
     
     faces = [1 2 3 4; 2 6 7 3; 4 3 7 8; 1 5 8 4; 1 2 6 5; 5 6 7 8];
 
-    figure
+    figure('units','normalized',...
+		'position',[0.1, 0.1, 0.7, 0.7]);
+    axes('units','normalized',...
+    'position',[0.15, 0.15, 0.75, 0.8])
+	
+	t1 = uicontrol('style','text',...
+		'units','normalized',...
+		'position',[.45 .0 .2 .05],...
+        'horizontalalignment','left',...
+		'fontsize',20,...
+		'string','Time = 0');
     hold on
     plot(0:1,[0 0],'k->')
     plot([0 0],0:1,'k-^')
@@ -274,11 +285,19 @@ function animate(posVec, thetaVec)
              1 0 0
              0 1 0
              1 1 0];
+    maxX = max(posVec(1,:))+0.75;
+    maxY = max(posVec(2,:))+0.75;
+    maxZ = max(posVec(3,:))+0.75;
+    minX = min(posVec(1,:))-0.75;
+    minY = min(posVec(2,:))-0.75;
+    minZ = min(posVec(3,:))-0.75;
     c3d = patch('Vertices', vertices, 'Faces', faces, 'FaceColor','interp','FaceVertexCData',cdata);
   
     rotate3d on
+    axis([minX maxX minY maxY minZ maxZ])
     axis equal vis3d
     for i = 1:numel(posVec(1,:))-3
+        set(t1,'string',['Time = ', num2str((i-1)*h)]);
         newVertices = (rotation(thetaVec(:,i))*vertices')';
         set(c3d,'xdata', newVertices(:,1) + posVec(1,i), 'ydata', newVertices(:,2) + posVec(2,i), 'zdata', newVertices(:,3) + posVec(3,i),'Faces',faces);
         %rotate(c3d,[0,0,1],1,posVec(:,i));

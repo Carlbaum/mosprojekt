@@ -325,13 +325,13 @@ function animate(posVec, thetaVec,refPos,h)
     axis([minX maxX minY maxY minZ maxZ])
     axis equal vis3d
    
-    for i = 1:12:numel(posVec(1,:))
-        tic
+    for i = 1:1:numel(posVec(1,:))
+       % tic
         set(t1,'string',['Time = ', num2str((i-1)*h)]);
         newVertices = (rotation(degtorad(thetaVec(:,i)))*vertices')';
         set(c3d,'xdata', newVertices(:,1) + posVec(1,i), 'ydata', newVertices(:,2) + posVec(2,i), 'zdata', newVertices(:,3) + posVec(3,i),'Faces',faces);
         %rotate(c3d,[0,0,1],1,posVec(:,i));
         pause(0.001)
-        toc
+       % toc
     end
 end 
